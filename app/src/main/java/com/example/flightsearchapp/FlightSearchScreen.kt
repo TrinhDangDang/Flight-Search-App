@@ -2,6 +2,7 @@ package com.example.flightsearchapp
 
 import android.content.ClipData
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,35 +20,44 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.flightsearchapp.ui.theme.FlightSearchAppTheme
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import com.example.flightsearchapp.data.Airport
 
 @Composable
-fun FlightSearchApp(){
-    FlightSearchScreen()
+fun FlightSearchApp(flightSearchViewModel: FlightSearchViewModel = viewModel(factory = FlightSearchViewModel.Factory)){
+    FlightSearchScreen(
+        uiState = flightSearchViewModel.uiState.collectAsState().value,
+        viewModel = flightSearchViewModel
+    )
 }
 
 @Composable
-fun FlightSearchScreen(){
+fun FlightSearchScreen(viewModel: FlightSearchViewModel, uiState: UiState){
     Scaffold(
         topBar = {
             FlightSearchTopAppBar()
         }
     ){ innerPadding ->
-        FlightSearchBar(
-            onMicClicked = {},
-            modifier = Modifier.padding(innerPadding)
-        )
-        Box(){
-            FlightSearchAutoFill(airports = listOf(""))
-            FlightSearchResult()
+        Column(modifier = Modifier.padding(innerPadding)) {
+            FlightSearchBar(
+                onMicClicked = {},
+                updateKeyword = { keyword -> viewModel.setSearchKeyword(keyword) },
+                uiState = uiState,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Box(modifier = Modifier.weight(1f)) {
+                FlightSearchAutoFill(uiState = uiState, modifier = Modifier.fillMaxWidth())
+                FlightSearchResult()
+            }
         }
     }
 }
@@ -56,12 +66,13 @@ fun FlightSearchScreen(){
 @Composable
 fun FlightSearchBar(
     onMicClicked: () -> Unit,
+    updateKeyword: (String) -> Unit,
+    uiState: UiState,
     modifier: Modifier = Modifier
 ){
-    var text by remember { mutableStateOf("hello") }
     TextField(
-        value = text,
-        onValueChange = { text = it},
+        value = uiState.keyword,
+        onValueChange = { updateKeyword(it)},
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = "Search Icon")
         },
@@ -75,10 +86,14 @@ fun FlightSearchBar(
 }
 
 @Composable
-fun FlightSearchAutoFill(airports: List<Airport>){
-    LazyColumn() {
-        items(airports) { airport ->
-            FlightSearchItem(airport.identifier, airport.name, modifier = Modifier)
+fun FlightSearchAutoFill(uiState: UiState, modifier: Modifier = Modifier){
+    if (uiState.airportsMatch.isEmpty()) {
+        Text("No matches found", modifier = modifier.padding(8.dp))
+    } else {
+        LazyColumn(modifier = modifier.fillMaxWidth()) {
+            items(uiState.airportsMatch) { airport ->
+                FlightSearchItem(airport.iata_code, airport.name)
+            }
         }
     }
 }
@@ -100,9 +115,9 @@ fun FlightSearchTopAppBar(
 }
 
 @Composable
-fun FlightSearchItem(identifier: String, airportName: String, modifier: Modifier = Modifier){
+fun FlightSearchItem(iataCode: String, airportName: String, modifier: Modifier = Modifier){
     Row (modifier = modifier){
-        Text(text = identifier,
+        Text(text = iataCode,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
@@ -118,18 +133,19 @@ fun FlightSearchTopAppBarPreview(){
         FlightSearchTopAppBar()
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun FlightSearchBarPreview(){
-    FlightSearchAppTheme {
-        FlightSearchBar(
-            onMicClicked = {},
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun FlightSearchBarPreview(){
+//    FlightSearchAppTheme {
+//        FlightSearchBar(
+//            onMicClicked = {},
+//            modifier = Modifier.fillMaxWidth(),
+//            uiState =
+//        )
+//    }
+//
+//}
 
 @Preview(showBackground = true)
 @Composable
@@ -138,3 +154,5 @@ fun FlightSearchItemPreview(){
         FlightSearchItem("MUC", "Munich International Airport", modifier = Modifier.fillMaxWidth())
     }
 }
+
+
