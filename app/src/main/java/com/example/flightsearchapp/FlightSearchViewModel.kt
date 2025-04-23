@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.flightsearchapp.data.Airport
 import com.example.flightsearchapp.data.Favorite
 import com.example.flightsearchapp.data.FlightSearchRepository
+import com.example.flightsearchapp.data.KeywordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +26,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepository): ViewModel() {
+class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepository, private val keywordRepository: KeywordRepository): ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -35,6 +36,24 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
         initialValue = emptyList()
     )
     init {
+        viewModelScope.launch {
+            combine(
+                keywordRepository.currentSearchKey,
+                flightSearchRepository.getAllAirportsStream()
+            ) { keyword, airports ->
+                val filtered = if (keyword.isBlank()) {
+                    emptyList()
+                } else {
+                    airports.filter {
+                        it.name.contains(keyword, ignoreCase = true) ||
+                                it.iata_code.contains(keyword, ignoreCase = true)
+                    }
+                }
+                UiState(keyword = keyword, airportsMatch = filtered)
+            }.collect { uiStateValue ->
+                _uiState.value = uiStateValue
+            }
+        }
         // Log the data when it updates
         viewModelScope.launch {
             allAirportsDataStream.collect { airports ->
@@ -43,11 +62,13 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
         }
     }
 
-    val favoriteAirportsStream: StateFlow<List<Favorite>> = flightSearchRepository.getFavoriteFlightsStream().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed((TIMEOUT_MILLIS)),
-        initialValue = emptyList()
-    )
+
+
+    fun setCurrentAirport(airport: Airport){
+        _uiState.update {
+            currentState -> currentState.copy(currentAirport = airport)
+        }
+    }
 
 
 
@@ -61,8 +82,12 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
             }
         }
         _uiState.update { currentState ->
-            currentState.copy(keyword = keyword, airportsMatch = filtered)
+            currentState.copy(keyword = keyword, currentAirport = null)
         }
+        viewModelScope.launch {
+            keywordRepository.saveCurrentSearchKey(keyword)
+        }
+
     }
 
 
@@ -71,7 +96,7 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = (this[APPLICATION_KEY] as FlightSearchApplication)
-                FlightSearchViewModel(application.container.flightSearchRepository)
+                FlightSearchViewModel(application.container.flightSearchRepository, application.container.keywordRepository)
 
             }
         }
@@ -81,4 +106,5 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
 data class UiState (
     val keyword: String = "",
     val airportsMatch: List<Airport> = emptyList(),
+    val currentAirport: Airport? = null
 )
