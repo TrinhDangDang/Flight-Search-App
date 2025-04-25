@@ -17,13 +17,14 @@ abstract class AirportDatabase: RoomDatabase(){
 
         fun getDatabase(context: Context): AirportDatabase {
             return Instance ?: synchronized(this) {
-                Room.databaseBuilder(context, AirportDatabase::class.java, "flight_search.db")
+                Room.databaseBuilder(context, AirportDatabase::class.java, "app_database")
                     .createFromAsset("database/flight_search.db")
                     .fallbackToDestructiveMigration()
                     .build()
                     .also { Instance = it }
             }
         }
+
 
     }
 }

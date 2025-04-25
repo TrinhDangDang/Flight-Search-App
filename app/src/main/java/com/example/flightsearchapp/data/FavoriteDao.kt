@@ -17,6 +17,9 @@ interface FavoriteDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(favorite: Favorite)
 
+//    @Query("DELETE FROM favorite WHERE departure_code = :departureCode AND destination_code = :destinationCode")
+//    suspend fun deleteByCodes(departureCode: String, destinationCode: String)
+
     @Delete
     suspend fun delete(favorite: Favorite)
 }

@@ -7,5 +7,6 @@ class OfflineFlightSearchRepository(private val airportDao: AirportDao, private 
     override fun getAllAirportsStream(): Flow<List<Airport>> = airportDao.getAllAirports()
     override fun getMatchingAirportsStream(searchKey: String): Flow<List<Airport>> = airportDao.getMatchingAirports(searchKey)
     override suspend fun insertFavorite(favorite: Favorite) = favoriteDao.insert(favorite)
-    override suspend fun deleteFavorite(favorite: Favorite) = favoriteDao.delete(favorite )
+//    override suspend fun deleteFavoriteByCodes(departureCode: String, destinationCode: String) = favoriteDao.deleteByCodes(departureCode, destinationCode )
+    override suspend fun deleteFavorite(favorite: Favorite) = favoriteDao.delete(favorite)
 }
