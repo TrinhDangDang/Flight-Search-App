@@ -84,7 +84,8 @@ fun FlightSearchScreen(viewModel: FlightSearchViewModel, uiState: UiState){
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)) {
+                .padding(innerPadding))
+        {
             FlightSearchBar(
                 onMicClicked = {},
                 updateKeyword = { keyword -> viewModel.setSearchKeyword(keyword) },
@@ -97,33 +98,58 @@ fun FlightSearchScreen(viewModel: FlightSearchViewModel, uiState: UiState){
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                if(uiState.currentAirport == null){
-                    FlightSearchAutoFill(onClicked = { airport -> viewModel.setCurrentAirport(airport) }, uiState = uiState, modifier = Modifier.fillMaxWidth())
-                } else {
-                    //viewModel.deleteFavoriteFlight(Favorite(departure_code = flight.depart.iata_code, destination_code = flight.destination.iata_code)) else
+                if (uiState.keyword.isEmpty()) {
+                    FavoriteFlights(uiState.listOfFavoriteFlights, onClicked = {
+                            flight ->
+                        if (!flight.isFavorite) {
+                            viewModel.insertFavoriteFlight(
+                                Favorite(
+                                    departure_code = flight.depart.iata_code,
+                                    destination_code = flight.destination.iata_code
+                                )
+                            )
+                        } else {
+                            viewModel.deleteFavoriteFlight(
+                                Favorite(
+                                    departure_code = flight.depart.iata_code,
+                                    destination_code = flight.destination.iata_code
+                                )
+                            )
+                        }
+                    })
+                }
+                else{
+                    if (uiState.currentAirport == null) {
+                        FlightSearchAutoFill(onClicked = { airport ->
+                            viewModel.setCurrentAirport(
+                                airport
+                            )
+                        }, uiState = uiState, modifier = Modifier.fillMaxWidth())
+                    } else {
+                        //viewModel.deleteFavoriteFlight(Favorite(departure_code = flight.depart.iata_code, destination_code = flight.destination.iata_code)) else
 //                    FlightSearchResult(uiState.airportsResult, starClick = { flight -> if (!flight.isFavorite)  viewModel.insertFavoriteFlight(Favorite(departure_code = flight.depart.iata_code, destination_code = flight.destination.iata_code)) }
 //                    )
-                    FlightSearchResult(
-                        flights = uiState.airportsResult,
-                        starClick = { flight ->
-                            if (!flight.isFavorite) {
-                                viewModel.insertFavoriteFlight(
-                                    Favorite(
-                                        departure_code = flight.depart.iata_code,
-                                        destination_code = flight.destination.iata_code
+                        FlightSearchResult(
+                            flights = uiState.airportsResult,
+                            starClick = { flight ->
+                                if (!flight.isFavorite) {
+                                    viewModel.insertFavoriteFlight(
+                                        Favorite(
+                                            departure_code = flight.depart.iata_code,
+                                            destination_code = flight.destination.iata_code
+                                        )
                                     )
-                                )
+                                } else {
+                                    viewModel.deleteFavoriteFlight(
+                                        Favorite(
+                                            departure_code = flight.depart.iata_code,
+                                            destination_code = flight.destination.iata_code
+                                        )
+                                    )
+                                }
                             }
-                            //                            else {
-//                                viewModel.deleteFavoriteFlight(
-//                                    Favorite(
-//                                        departure_code = flight.depart.iata_code,
-//                                        destination_code = flight.destination.iata_code
-//                                    )
-//                                )
-//                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -255,7 +281,13 @@ fun ResultItem(flight: AirportFlight, onClicked: (AirportFlight) -> Unit, modifi
 }
 
 @Composable
-fun FavoriteFlights(favoritesList: List<Favorite>){}
+fun FavoriteFlights(listOfFavoriteFlights: List<AirportFlight>, onClicked: (AirportFlight) -> Unit, modifier: Modifier = Modifier){
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp),modifier = modifier) {
+        items(listOfFavoriteFlights){
+            item -> ResultItem(item, onClicked = onClicked)
+        }
+    }
+}
 
 
 

@@ -32,7 +32,7 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-//
+
 //    fun insertTest(flight: AirportFlight){
 //        viewModelScope.launch {
 //            flightSearchRepository.insertFavorite(Favorite(departure_code = flight.depart.iata_code, destination_code = flight.destination.iata_code))
@@ -61,8 +61,8 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
                 flightSearchRepository.getAllAirportsStream(),
                 flightSearchRepository.getFavoriteFlightsStream()
             ) { keyword, airports , favorites->
-                val currentAirport: Airport? = _uiState.value.currentAirport
-                val filtered = if (keyword.isBlank()) {
+                val currentAirport: Airport? = uiState.value.currentAirport
+                val filtered: List<Airport> = if (keyword.isBlank()) {
                     emptyList()
                 } else {
                     airports.filter {
@@ -76,10 +76,24 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
                         val isFavorite = favorites.any{it.departure_code == currentAirport.iata_code && it.destination_code == airport.iata_code}
                         AirportFlight(depart = currentAirport, destination = airport, isFavorite = isFavorite) }
                 }
-                UiState(keyword = keyword, airportsMatch = filtered, airportsResult = result, currentAirport = currentAirport)
-            }.collect { uiStateValue ->
-                _uiState.value = uiStateValue
-            }
+                val listOfFavoriteFlights = favorites.mapNotNull { favorite ->
+                    val departureAirport = airports.find { it.iata_code == favorite.departure_code }
+                    val destinationAirport = airports.find { it.iata_code == favorite.destination_code }
+                    if (departureAirport != null && destinationAirport != null) {
+                        AirportFlight(depart = departureAirport, destination = destinationAirport, isFavorite = true)
+                    } else {
+                        null
+                    }
+                }
+                UiState(
+                    keyword = keyword,
+                    airportsMatch = filtered,
+                    airportsResult = result,
+                    currentAirport = currentAirport,
+                    favoriteFlights = favorites,
+                    listOfFavoriteFlights = listOfFavoriteFlights
+                )
+            }.collect { uiStateValue -> _uiState.value = uiStateValue }
         }
         // Log the data when it updates
         viewModelScope.launch {
@@ -91,16 +105,16 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
 
 
     fun setCurrentAirport(airport: Airport){
-        val favoriteFlights: List<Favorite> = favoriteFlightsDataStream.value
-        val airportsResult: List<AirportFlight> = allAirportsDataStream.value.map { destination ->
-            val isFavorite = favoriteFlights.any{it.departure_code == airport.iata_code && it.destination_code == destination.iata_code}
-            AirportFlight(depart = airport, destination = destination, isFavorite = isFavorite) }
+//        val favoriteFlights: List<Favorite> = favoriteFlightsDataStream.value
+//        val airportsResult: List<AirportFlight> = allAirportsDataStream.value.map { destination ->
+//            val isFavorite = favoriteFlights.any{it.departure_code == airport.iata_code && it.destination_code == destination.iata_code}
+//            AirportFlight(depart = airport, destination = destination, isFavorite = isFavorite) }
 
         _uiState.update { currentState ->
             currentState.copy(
-                keyword = airport.iata_code,
+//                keyword = airport.iata_code,
                 currentAirport = airport,
-                airportsResult = airportsResult
+//                airportsResult = airportsResult
             )
         }
         viewModelScope.launch {
@@ -128,29 +142,37 @@ class FlightSearchViewModel(private val flightSearchRepository: FlightSearchRepo
     }
 
     fun insertFavoriteFlight(favorite: Favorite){
-        val updatedUiAirportsResult = uiState.value.airportsResult.map {
-            airportFlight ->
-                if (airportFlight.destination.iata_code == favorite.destination_code) {
-                    AirportFlight(depart = airportFlight.depart, destination = airportFlight.destination, isFavorite = true)
-                } else {
-                    airportFlight
-                }
-        }
-        _uiState.update { currentState ->
-            currentState.copy(airportsResult = updatedUiAirportsResult)
-        }
+//        val updatedUiAirportsResult = uiState.value.airportsResult.map {
+//                airportFlight ->
+//            if (airportFlight.destination.iata_code == favorite.destination_code && airportFlight.depart.iata_code == favorite.departure_code && airportFlight.isFavorite == false) {
+//                AirportFlight(depart = airportFlight.depart, destination = airportFlight.destination, isFavorite = true)
+//            } else {
+//                airportFlight
+//            }
+//        }
+//        // && airportFlight.isFavorite == false
+//        _uiState.update { currentState ->
+//            currentState.copy(airportsResult = updatedUiAirportsResult)
+//        }
         viewModelScope.launch {
             flightSearchRepository.insertFavorite(favorite)
         }
 
     }
-
     fun deleteFavoriteFlight(favorite: Favorite){
-
-        viewModelScope.launch {
-
+        val favoriteToDelete: Favorite? = uiState.value.favoriteFlights.find {
+            it.departure_code == favorite.departure_code &&
+                    it.destination_code == favorite.destination_code
         }
+        if (favoriteToDelete != null) {
+            viewModelScope.launch {
+                flightSearchRepository.deleteFavorite(favoriteToDelete)
+            }
+        }
+
     }
+
+//T
 
 
     companion object {
@@ -169,7 +191,9 @@ data class UiState (
     val keyword: String = "",
     val airportsMatch: List<Airport> = emptyList(),
     val airportsResult: List<AirportFlight> = emptyList(),
-    val currentAirport: Airport? = null
+    val currentAirport: Airport? = null,
+    val favoriteFlights: List<Favorite> = emptyList(),
+    val listOfFavoriteFlights: List<AirportFlight> = emptyList()
 )
 
 data class AirportFlight(
