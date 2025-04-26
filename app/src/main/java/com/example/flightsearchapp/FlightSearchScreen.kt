@@ -40,7 +40,9 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -180,6 +182,8 @@ fun FlightSearchBar(
         singleLine = true,
         maxLines = 1,
         colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFFD5E4FE), // Light blue
+            unfocusedContainerColor = Color(0xFFD5E4FE),
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent
@@ -203,9 +207,19 @@ fun FlightSearchAutoFill(onClicked: (Airport) -> Unit, uiState: UiState, modifie
 
 @Composable
 fun FlightSearchResult(flights: List<AirportFlight>, starClick: (AirportFlight) -> Unit, modifier: Modifier = Modifier){
-    LazyColumn( verticalArrangement = Arrangement.spacedBy(8.dp),modifier = modifier){
-        items(flights){
-            flight -> ResultItem(flight, onClicked = starClick)
+    Column(modifier = modifier) {
+        if (flights.isNotEmpty()) {
+            Text(
+                text = "Flights from ${flights[0].depart.iata_code}",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(flights) { flight ->
+                ResultItem(flight, onClicked = starClick)
+            }
         }
     }
 }
@@ -217,6 +231,12 @@ fun FlightSearchTopAppBar(
 ){
     TopAppBar(
         title = {Text("Flight Search")},
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color(0xFF1E5FA6),
+            titleContentColor = Color.White,
+            navigationIconContentColor = Color.White,
+            actionIconContentColor = Color.White
+        ),
         modifier = modifier
     )
 }
@@ -238,8 +258,17 @@ fun FlightSearchItem(airport: Airport, onClicked: (Airport) -> Unit, modifier: M
 
 @Composable
 fun ResultItem(flight: AirportFlight, onClicked: (AirportFlight) -> Unit, modifier: Modifier = Modifier){
-    Card(modifier = modifier
-        .clip(RoundedCornerShape(bottomStart = 16.dp, topEnd = 16.dp))){
+    Card(
+        shape = RoundedCornerShape(
+            topStart = 0.dp,
+            topEnd = 16.dp,
+            bottomEnd = 0.dp,
+            bottomStart = 0.dp
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(150.dp)
+    ){
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -292,9 +321,20 @@ fun ResultItem(flight: AirportFlight, onClicked: (AirportFlight) -> Unit, modifi
 
 @Composable
 fun FavoriteFlights(listOfFavoriteFlights: List<AirportFlight>, onClicked: (AirportFlight) -> Unit, modifier: Modifier = Modifier){
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp),modifier = modifier) {
-        items(listOfFavoriteFlights){
-            item -> ResultItem(item, onClicked = onClicked)
+    Column(modifier = modifier) {
+        Text(
+            text = "Favorite routes",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(listOfFavoriteFlights) { item ->
+                ResultItem(item, onClicked = onClicked)
+            }
         }
     }
 }
