@@ -40,12 +40,14 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -175,7 +177,14 @@ fun FlightSearchBar(
                 Icon(Icons.Default.Mic, contentDescription = "Mic Icon")
             }
         },
-        modifier = modifier
+        singleLine = true,
+        maxLines = 1,
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent
+        ),
+        modifier = modifier.clip(RoundedCornerShape(50.dp))
     )
 }
 
@@ -229,7 +238,8 @@ fun FlightSearchItem(airport: Airport, onClicked: (Airport) -> Unit, modifier: M
 
 @Composable
 fun ResultItem(flight: AirportFlight, onClicked: (AirportFlight) -> Unit, modifier: Modifier = Modifier){
-    Card(modifier = modifier){
+    Card(modifier = modifier
+        .clip(RoundedCornerShape(bottomStart = 16.dp, topEnd = 16.dp))){
         Row(
             modifier = Modifier
                 .fillMaxWidth()
